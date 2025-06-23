@@ -8,26 +8,41 @@ def emotion_detector(text_to_analyze):
 
     response = requests.post(url, json=myobj, headers=header)
 
-    formatted_output = {
-        'dominant_emotion': None
-    }
+    formatted_output = {'anger': None, 'disgust': None, 'fear': None, 'joy': None,
+        'sadness': None, 'dominant_emotion': None }
 
     if response.status_code == 200:
-        json_response = json.loads(response.text)
+        try:
+            json_response = json.loads(response.text)
 
-        if 'emotionPredictions' in json_response and len(json_response['emotionPredictions']) > 0 and \
-            'emotion' in json_response['emotionPredictions'][0]:
+            if 'emotionPredictions' in json_response and len(json_response['emotionPredictions']) > 0 and \
+               'emotion' in json_response['emotionPredictions'][0]:
 
-            emotions_data = json_response['emotionPredictions'][0]['emotion']
+                emotions_data = json_response['emotionPredictions'][0]['emotion']
 
-            emotion_scores_for_dominant = {}
+                formatted_output['anger'] = emotions_data.get('anger')
+                formatted_output['disgust'] = emotions_data.get('disgust')
+                formatted_output['fear'] = emotions_data.get('fear')
+                formatted_output['joy'] = emotions_data.get('joy')
+                formatted_output['sadness'] = emotions_data.get('sadness')
 
-            for emotion_name, score in emotions_data.items():
-                formatted_output[emotion_name] = score 
-                emotion_scores_for_dominant[emotion_name] = score 
+                current_emotion_scores = {
+                    'anger': formatted_output['anger'],
+                    'disgust': formatted_output['disgust'],
+                    'fear': formatted_output['fear'],
+                    'joy': formatted_output['joy'],
+                    'sadness': formatted_output['sadness']
+                }
 
-            if emotion_scores_for_dominant: # Ensure there are emotions to compare
-                dominant_emotion = max(emotion_scores_for_dominant, key=emotion_scores_for_dominant.get)
-                formatted_output['dominant_emotion'] = dominant_emotion
+                valid_emotions = {k: v for k, v in current_emotion_scores.items() if v is not None}
+                if valid_emotions:
+                    dominant_emotion = max(valid_emotions, key=valid_emotions.get)
+                    formatted_output['dominant_emotion'] = dominant_emotion
+
+        except json.JSONDecodeError:
+            pass
+        except KeyError:
+            pass
+    # For status_code 400, the initial formatted_output has all None
 
     return formatted_output
